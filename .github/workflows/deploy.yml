@@ -1,0 +1,23 @@
+name: Deploy Room Planner
+
+on:
+  push:
+    branches: [dev, master]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Pull latest and redeploy
+        run: |
+          set -euo pipefail
+          case "${{ github.ref_name }}" in
+            master) DIR=/home/room-planner ;;
+            dev)    DIR=/home/kien/room-planner-dev ;;
+            *) echo "Unexpected ref ${{ github.ref_name }}"; exit 1 ;;
+          esac
+          cd "$DIR"
+          git fetch origin "${{ github.ref_name }}"
+          git reset --hard "origin/${{ github.ref_name }}"
+          git clean -fd -e .env -e data -e devdata
+          ./deploy.sh
