@@ -1,0 +1,7 @@
+.env
+data/
+devdata/
+.build-cache/
+*.bak-*
+HUONG-DAN-SU-DUNG.md
+NHAT-KY-XAY-DUNG.md

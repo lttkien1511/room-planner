@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Room Planner</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <button id="btnLeft" class="only-narrow" type="button" aria-label="Thư viện đồ vật">☰</button>
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21H3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 21v-6h6v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <input id="projName" type="text" maxlength="80" spellcheck="false" aria-label="Tên dự án" value="Dự án mới">
+    </div>
+    <details class="menu" id="fileMenu">
+      <summary>Tệp ▾</summary>
+      <div class="menu-pop">
+        <button type="button" data-act="new">Dự án mới</button>
+        <button type="button" data-act="open">Mở từ máy chủ…</button>
+        <button type="button" data-act="save">Lưu lên máy chủ <kbd>Ctrl+S</kbd></button>
+        <hr>
+        <button type="button" data-act="export">Xuất file JSON</button>
+        <button type="button" data-act="import">Nhập file JSON…</button>
+        <button type="button" data-act="png">Xuất ảnh PNG</button>
+      </div>
+    </details>
+    <button id="btnSave" class="primary" type="button" title="Lưu lên máy chủ (Ctrl+S)">Lưu</button>
+    <span id="saveState" class="pill"></span>
+    <span class="sep"></span>
+    <div class="seg" id="toolSeg" role="group" aria-label="Công cụ">
+      <button type="button" data-tool="select">Chọn</button>
+      <button type="button" data-tool="draw-room">Vẽ phòng</button>
+      <button type="button" data-tool="draw-wall">Vẽ tường</button>
+    </div>
+    <button id="btnRoom" type="button">Phòng chữ nhật…</button>
+    <span class="sep"></span>
+    <button id="btnUndo" type="button" title="Hoàn tác (Ctrl+Z)" aria-label="Hoàn tác">↶</button>
+    <button id="btnRedo" type="button" title="Làm lại (Ctrl+Y)" aria-label="Làm lại">↷</button>
+    <span class="sep"></span>
+    <div class="seg" id="modeSeg" role="group" aria-label="Chế độ xem">
+      <button type="button" data-mode="3d">3D</button>
+      <button type="button" data-mode="2d">2D</button>
+    </div>
+    <select id="wallMode" aria-label="Hiển thị tường">
+      <option value="full">Tường: đầy đủ</option>
+      <option value="low">Tường: thấp</option>
+      <option value="hide">Tường: ẩn</option>
+    </select>
+    <button id="btnFit" type="button" title="Căn khung toàn cảnh">Căn khung</button>
+    <span class="sep"></span>
+    <label class="chk"><input type="checkbox" id="optSnap"> Snap</label>
+    <select id="optGrid" aria-label="Bước lưới">
+      <option value="1">1 cm</option><option value="5">5 cm</option><option value="10">10 cm</option>
+      <option value="25">25 cm</option><option value="50">50 cm</option>
+    </select>
+    <label class="chk"><input type="checkbox" id="optDims"> Kích thước</label>
+    <label class="chk"><input type="checkbox" id="optShadows"> Bóng</label>
+    <button id="btnRight" class="only-narrow" type="button" aria-label="Thuộc tính">⚙</button>
+  </header>
+
+  <aside id="left" aria-label="Thư viện đồ vật">
+    <div class="panel-head"><input id="catSearch" type="search" placeholder="Tìm đồ vật…" aria-label="Tìm đồ vật" autocomplete="off"></div>
+    <div id="catalog"></div>
+  </aside>
+
+  <main id="viewport" data-tool="select">
+    <div id="hint" aria-live="polite"></div>
+    <div id="empty" hidden>
+      <h2>Bắt đầu thiết kế</h2>
+      <p>Tạo phòng nhanh theo kích thước, hoặc tự vẽ từng góc. Sau đó kéo đồ từ thư viện bên trái vào phòng.</p>
+      <div class="btnrow">
+        <button id="emptyRoom" class="primary" type="button">Phòng chữ nhật…</button>
+        <button id="emptyDraw" type="button">Vẽ phòng</button>
+      </div>
+    </div>
+    <div id="fatal" hidden></div>
+  </main>
+
+  <aside id="right" aria-label="Thuộc tính"><div id="props"></div></aside>
+</div>
+
+<dialog id="dlgRoom">
+  <form method="dialog" id="formRoom">
+    <h2>Phòng chữ nhật</h2>
+    <p class="muted small">Kích thước thông thuỷ (mép trong của tường). Tường được đặt bao quanh.</p>
+    <div class="grid2">
+      <label>Rộng (cm)<input type="number" name="w" value="400" min="60" max="5000" step="10" required></label>
+      <label>Dài (cm)<input type="number" name="d" value="350" min="60" max="5000" step="10" required></label>
+      <label>Dày tường (cm)<input type="number" name="t" value="10" min="2" max="60" step="1" required></label>
+      <label>Cao tường (cm)<input type="number" name="h" value="270" min="100" max="600" step="10" required></label>
+    </div>
+    <label class="chk pad"><input type="checkbox" name="replace" checked> Thay thế tường và sàn hiện có</label>
+    <div class="actions">
+      <button type="submit" value="cancel" formnovalidate>Huỷ</button>
+      <button type="submit" value="ok" class="primary">Tạo phòng</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgOpen">
+  <div class="dlg-head"><h2>Dự án trên máy chủ</h2><button type="button" id="dlgOpenClose" aria-label="Đóng">✕</button></div>
+  <div id="projList"></div>
+  <p id="projMsg" class="muted"></p>
+</dialog>
+
+<dialog id="dlgBlock" class="dlg-block">
+  <div class="dlg-head"><h2 id="blockTitle">Tạo đồ vật mới</h2><button type="button" id="blockClose" aria-label="Đóng">✕</button></div>
+  <p class="muted small">Ghép hộp/trụ/cầu để tạo hình. Kéo trực tiếp trong khung nhìn để dời/đổi kích thước, hoặc gõ số bên phải.</p>
+  <div class="block-grid">
+    <div class="block-col block-left">
+      <div id="blockAdd" class="block-add"></div>
+      <div id="blockList" class="block-list"></div>
+    </div>
+    <div id="blockViewport" class="block-viewport"></div>
+    <div class="block-col block-right" id="blockRight"></div>
+  </div>
+  <div class="actions">
+    <button type="button" id="blockCancel">Huỷ</button>
+    <button type="button" id="blockSave" class="primary">Lưu</button>
+  </div>
+</dialog>
+
+<div id="toast" role="status"></div>
+<input type="file" id="fileInput" accept=".json,application/json" hidden>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

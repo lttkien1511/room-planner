@@ -1,0 +1,2 @@
+three.js 0.186.1 (MIT), bundled with esbuild 0.28.2
+entry: tools/vendor-entry.js

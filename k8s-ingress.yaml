@@ -1,0 +1,79 @@
+# HTTPS entry through the k3s Traefik (self-signed cert-manager Issuer), pointing at the Docker
+# container published on the host at 192.168.50.10:5080 - same pattern as actual-budget / sync-in.
+# Apply (no sudo):  ./apply-ingress.sh
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: room-planner
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: room-planner
+  namespace: room-planner
+spec:
+  ports:
+    - name: http
+      port: 5080
+      targetPort: 5080
+      protocol: TCP
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: room-planner-host
+  namespace: room-planner
+  labels:
+    kubernetes.io/service-name: room-planner
+addressType: IPv4
+ports:
+  - name: http
+    port: 5080
+    protocol: TCP
+endpoints:
+  - addresses:
+      - 192.168.50.10
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned
+  namespace: room-planner
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: room-planner-tls
+  namespace: room-planner
+spec:
+  secretName: room-planner-tls
+  dnsNames:
+    - room.kienhomeserver.lab
+  issuerRef:
+    name: selfsigned
+    kind: Issuer
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: room-planner
+  namespace: room-planner
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: room.kienhomeserver.lab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: room-planner
+                port:
+                  number: 5080
+  tls:
+    - hosts:
+        - room.kienhomeserver.lab
+      secretName: room-planner-tls
