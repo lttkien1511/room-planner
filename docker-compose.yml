@@ -1,14 +1,13 @@
 # Room Planner: nginx (static web + /api proxy) + a tiny Python API that stores projects.
 #   up:    ./deploy.sh
 #   data:  DATA_DIR in .env  (./data locally, /mnt/omv/room-planner once the OMV share is mounted)
-name: room-planner
 
 services:
   web:
     image: nginxinc/nginx-unprivileged:1.27-alpine
     restart: unless-stopped
     ports:
-      - "5080:8080"
+      - "${WEB_PORT:-5080}:8080"
     volumes:
       - ./web:/usr/share/nginx/html:ro
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
